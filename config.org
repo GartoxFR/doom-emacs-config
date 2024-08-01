@@ -1,0 +1,148 @@
+* Font and theme
+#+begin_src emacs-lisp
+(setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 17 :weight 'normal))
+(setq catppuccin-flavor 'mocha)
+(setq doom-theme 'catppuccin)
+(setq display-line-numbers-type 'relative)
+#+end_src
+* Useful keybindings
+** Run shell commands
+#+begin_src emacs-lisp
+(map! :map global-map
+      :leader
+      "&" #'async-shell-command
+      "!" #'shell-command)
+#+end_src
+** Better keybindings for autocomplete
+#+begin_src emacs-lisp
+(after! company (map! :map company-active-map
+      "RET" nil
+      "<return>" nil
+      "<tab>" nil
+      "TAB" nil))
+
+(after! company (map! :map company-active-map
+      "C-y" #'company-complete-selection))
+#+end_src
+
+* Set tree-sitter highlight for some languages
+#+begin_src emacs-lisp
+(add-hook! 'rust-mode-hook (tree-sitter-hl-mode))
+(add-hook! 'zig-mode-hook (tree-sitter-hl-mode))
+(add-hook! 'c-mode-hook (tree-sitter-hl-mode))
+(add-hook! 'c++-mode-hook (tree-sitter-hl-mode))
+#+end_src
+
+* LSP
+** Clangd
+*** List the query driver
+#+begin_src emacs-lisp
+(setq my-clangd-query-drivers '(
+                             "/usr/bin/gcc"
+                             "/usr/bin/g++"
+                             "/home/ewan/**/*gcc*"
+                             "/home/ewan/**/*g++*"
+                             ))
+
+#+end_src
+*** Build clangd arguments with the allowed query drivers
+#+begin_src emacs-lisp
+(setq lsp-clients-clangd-args (cons
+                               (concat "--query-driver=" (string-join my-clangd-query-drivers ","))
+                               '("-j=3"
+                                 "--background-index"
+                                 "--clang-tidy"
+                                 "--completion-style=detailed"
+                                 "--header-insertion=never"
+                                 "--header-insertion-decorators=0")))
+#+end_src
+*** Set clangd to be the LSP to use (not ccls)
+#+begin_src emacs-lisp
+(after! lsp-clangd (set-lsp-priority! 'clangd 2))
+#+end_src
+
+* Org
+#+begin_src emacs-lisp
+(setq org-directory "~/org/")
+(setq org-capture-templates
+      '(("t" "Personal todo" entry
+          (file+headline +org-capture-todo-file "Inbox")
+          "* TODO %?\n%i\n%a" :prepend t)
+        ("n" "Personal notes" entry
+          (file+headline +org-capture-notes-file "Inbox")
+          "* %u %?\n%i\n%a" :prepend t)
+        ;; ("j" "Journal" entry
+        ;;  (file+olp+datetree +org-capture-journal-file)
+        ;;  "* %U %?\n%i\n%a" :prepend t)
+        ("p" "Templates for projects")
+        ("pt" "Project-local todo" entry
+          (file+headline +org-capture-project-todo-file "Inbox")
+          "* TODO %?\n%i\n%a" :prepend t)
+        ("pn" "Project-local notes" entry
+          (file+headline +org-capture-project-notes-file "Inbox")
+          "* %U %?\n%i\n%a" :prepend t)
+        ("pc" "Project-local changelog" entry
+          (file+headline +org-capture-project-changelog-file "Unreleased")
+          "* %U %?\n%i\n%a" :prepend t)
+        ("o" "Centralized templates for projects")
+        ("ot" "Project todo" entry #'+org-capture-central-project-todo-file "* TODO %?\n %i\n %a" :heading "Tasks" :prepend nil)
+        ("on" "Project notes" entry #'+org-capture-central-project-notes-file "* %U %?\n %i\n %a" :heading "Notes" :prepend t)
+        ("oc" "Project changelog" entry #'+org-capture-central-project-changelog-file "* %U %?\n %i\n %a" :heading "Changelog" :prepend t)))
+#+end_src
+
+* MPC
+#+begin_src emacs-lisp
+(map! :map global-map
+      :leader
+      :prefix "o"
+      "p" #'mpc)
+
+
+
+(add-hook 'mpc-mode-hook
+ (lambda ()
+   (keymap-local-set "C-k"        'windmove-up)
+   (keymap-local-set "C-j"        'windmove-down)
+   (keymap-local-set "C-h"        'windmove-left)
+   (keymap-local-set "C-l"        'windmove-right)
+   (evil-local-set-key 'normal (kbd  "C-<return>") 'mpc-play-at-point)
+   (evil-local-set-key 'normal (kbd "<return>") 'mpc-select)
+   (evil-local-set-key 'normal (kbd "t")      'mpc-toggle-play)
+   (evil-local-set-key 'normal (kbd "s")          'mpc-toggle-shuffle)
+   (evil-local-set-key 'normal (kbd ">")          '(mpc-seek-current +5))
+   (evil-local-set-key 'normal (kbd "<")          '(mpc-seek-current -5))
+   (evil-local-set-key 'normal (kbd "q")          'mpc-quit)
+   (evil-local-set-key 'normal (kbd "c")          (lambda() (interactive) (mpc-playlist) (mpc-playlist-delete)))
+   (evil-local-set-key 'normal (kbd "d")          (lambda() (interactive) (mpc-select) (mpc-playlist-delete)))
+   (evil-local-set-key 'normal (kbd "n")          'mpc-next)
+   (evil-local-set-key 'normal (kbd "p")          'mpc-playlist)
+   (evil-local-set-key 'normal (kbd "P")          'mpc-prev)))
+#+end_src
+
+* Email
+
+#+begin_src emacs-lisp
+(setq +mu4e-backend 'offlineimap)
+
+(set-email-account! "Insa"
+                    '((mu4e-sent-folder . "/insa/Sent")
+                      (mu4e-drafts-folder . "/insa/Drafts")
+                      (mu4e-trash-folder . "/insa/Trash")
+                      (user-mail-address . "ewan.chorynski@insa-lyon.fr"))
+                    t)
+
+(after! mu4e
+  (setq sendmail-program (executable-find "msmtp")
+	send-mail-function #'smtpmail-send-it
+        mu4e-update-interval 300
+	message-sendmail-f-is-evil t
+	message-sendmail-extra-arguments '("--read-envelope-from")
+	message-send-mail-function #'message-send-mail-with-sendmail))
+#+end_src
+
+* To be sorted
+#+begin_src emacs-lisp
+(after! projectile (setq projectile-project-search-path '("~/dev")))
+#+end_src
+
+#+RESULTS:
