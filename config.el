@@ -21,7 +21,7 @@
 ;; See 'C-h v doom-font' for documentation and more examples of what they
 ;; accept. For example:
 ;;
-(setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 18 :weight 'normal))
+(setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 17 :weight 'normal))
      ;; doom-variable-pitch-font (font-spec :family "JetBrainsMono Nerd Font" :size 13))
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
@@ -76,14 +76,126 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
-(setq lsp-clients-clangd-args '("-j=3"
-                                "--background-index"
-                                "--clang-tidy"
-                                "--completion-style=detailed"
-                                "--header-insertion=never"
-                                "--header-insertion-decorators=0"))
+(setq my-clangd-query-drivers '(
+                             "/usr/bin/gcc"
+                             "/usr/bin/g++"
+                             "/home/ewan/**/*gcc*"
+                             "/home/ewan/**/*g++*"
+                             ;; "/home/ewan/.platformio/packages/toolchain-atmelavr/bin/avr-g++"
+                             ))
+
+(setq lsp-clients-clangd-args (cons
+                               (concat "--query-driver=" (string-join my-clangd-query-drivers ","))
+                               '("-j=3"
+                                 "--background-index"
+                                 "--clang-tidy"
+                                 "--completion-style=detailed"
+                                 "--header-insertion=never"
+                                 "--header-insertion-decorators=0")))
 (after! lsp-clangd (set-lsp-priority! 'clangd 2))
 
 (add-hook! 'rust-mode-hook (tree-sitter-hl-mode))
+(add-hook! 'zig-mode-hook (tree-sitter-hl-mode))
 (add-hook! 'c-mode-hook (tree-sitter-hl-mode))
 (add-hook! 'c++-mode-hook (tree-sitter-hl-mode))
+
+
+(emms-all)
+(setq emms-seek-seconds 5
+      emms-player-list '(emms-player-mpd)
+      emms-info-functions '(emms-info-mpd))
+
+(add-hook 'emms-browser-mode-hook 'emms-player-mpd-connect)
+
+(map! :map global-map
+      :leader
+      :prefix "o"
+      "p" #'mpc)
+
+(map! :map global-map
+      :leader
+      "&" #'async-shell-command
+      "!" #'shell-command)
+
+
+(setq org-capture-templates
+      '(("t" "Personal todo" entry
+          (file+headline +org-capture-todo-file "Inbox")
+          "* TODO %?\n%i\n%a" :prepend t)
+        ("n" "Personal notes" entry
+          (file+headline +org-capture-notes-file "Inbox")
+          "* %u %?\n%i\n%a" :prepend t)
+        ;; ("j" "Journal" entry
+        ;;  (file+olp+datetree +org-capture-journal-file)
+        ;;  "* %U %?\n%i\n%a" :prepend t)
+        ("p" "Templates for projects")
+        ("pt" "Project-local todo" entry
+          (file+headline +org-capture-project-todo-file "Inbox")
+          "* TODO %?\n%i\n%a" :prepend t)
+        ("pn" "Project-local notes" entry
+          (file+headline +org-capture-project-notes-file "Inbox")
+          "* %U %?\n%i\n%a" :prepend t)
+        ("pc" "Project-local changelog" entry
+          (file+headline +org-capture-project-changelog-file "Unreleased")
+          "* %U %?\n%i\n%a" :prepend t)
+        ("o" "Centralized templates for projects")
+        ("ot" "Project todo" entry #'+org-capture-central-project-todo-file "* TODO %?\n %i\n %a" :heading "Tasks" :prepend nil)
+        ("on" "Project notes" entry #'+org-capture-central-project-notes-file "* %U %?\n %i\n %a" :heading "Notes" :prepend t)
+        ("oc" "Project changelog" entry #'+org-capture-central-project-changelog-file "* %U %?\n %i\n %a" :heading "Changelog" :prepend t)))
+
+(add-hook 'mpc-mode-hook
+ (lambda ()
+   (keymap-local-set "C-k"        'windmove-up)
+   (keymap-local-set "C-j"        'windmove-down)
+   (keymap-local-set "C-h"        'windmove-left)
+   (keymap-local-set "C-l"        'windmove-right)
+   (evil-local-set-key 'normal (kbd  "C-<return>") 'mpc-play-at-point)
+   (evil-local-set-key 'normal (kbd "<return>") 'mpc-select)
+   (evil-local-set-key 'normal (kbd "t")      'mpc-toggle-play)
+   (evil-local-set-key 'normal (kbd "s")          'mpc-toggle-shuffle)
+   (evil-local-set-key 'normal (kbd ">")          '(mpc-seek-current +5))
+   (evil-local-set-key 'normal (kbd "<")          '(mpc-seek-current -5))
+   (evil-local-set-key 'normal (kbd "q")          'mpc-quit)
+   (evil-local-set-key 'normal (kbd "c")          (lambda() (interactive) (mpc-playlist) (mpc-playlist-delete)))
+   (evil-local-set-key 'normal (kbd "d")          (lambda() (interactive) (mpc-select) (mpc-playlist-delete)))
+   (evil-local-set-key 'normal (kbd "n")          'mpc-next)
+   (evil-local-set-key 'normal (kbd "p")          'mpc-playlist)
+   (evil-local-set-key 'normal (kbd "P")          'mpc-prev)))
+
+(setq shell-file-name "/usr/bin/bash")
+(setq vterm-shell "/usr/bin/tmux")
+(setenv "SHELL" shell-file-name)
+
+
+(setq vterm-eval-cmds '(("find-file" find-file)
+                        ("message" message)
+                        ("vterm-clear-scrollback" vterm-clear-scrollback)
+                        ("dired" dired)
+                        ("ediff-files" ediff-files)))
+
+(setq +mu4e-backend 'offlineimap)
+
+(set-email-account! "Insa"
+                    '((mu4e-sent-folder . "/insa/Sent")
+                      (mu4e-drafts-folder . "/insa/Drafts")
+                      (mu4e-trash-folder . "/insa/Trash")
+                      (user-mail-address . "ewan.chorynski@insa-lyon.fr"))
+                    t)
+(after! mu4e
+  (setq sendmail-program (executable-find "msmtp")
+	send-mail-function #'smtpmail-send-it
+        mu4e-update-interval 300
+	message-sendmail-f-is-evil t
+	message-sendmail-extra-arguments '("--read-envelope-from")
+	message-send-mail-function #'message-send-mail-with-sendmail))
+
+(after! projectile (setq projectile-project-search-path '("~/dev")))
+
+(after! company (map! :map company-active-map
+      "RET" nil
+      "<return>" nil
+      "<tab>" nil
+      "TAB" nil))
+
+(after! company (map! :map company-active-map
+      "C-y" #'company-complete-selection))
