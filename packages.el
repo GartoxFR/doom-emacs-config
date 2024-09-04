@@ -51,3 +51,7 @@
 
 (package! catppuccin-theme)
 (package! tldr)
+
+(package! slint-mode)
+
+(package! wgsl-mode)

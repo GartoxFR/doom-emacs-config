@@ -25,12 +25,21 @@
       "C-y" #'company-complete-selection))
 #+end_src
 
+** Better keybindings for snippets
+#+begin_src emacs-lisp
+(map! :map yas-keymap
+      "C-k" #'yas-next-field
+      "C-h" #'yas-prev-field)
+#+end_src
 * Set tree-sitter highlight for some languages
 #+begin_src emacs-lisp
+(add-hook! 'python-mode-hook (tree-sitter-hl-mode))
 (add-hook! 'rust-mode-hook (tree-sitter-hl-mode))
 (add-hook! 'zig-mode-hook (tree-sitter-hl-mode))
 (add-hook! 'c-mode-hook (tree-sitter-hl-mode))
 (add-hook! 'c++-mode-hook (tree-sitter-hl-mode))
+(add-hook! 'makefile-mode-hook (tree-sitter-hl-mode))
+(add-hook! 'makefile-gmake-mode-hook (tree-sitter-hl-mode))
 #+end_src
 
 * LSP
@@ -40,6 +49,8 @@
 (setq my-clangd-query-drivers '(
                              "/usr/bin/gcc"
                              "/usr/bin/g++"
+                             "/usr/bin/cc"
+                             "/usr/bin/c++"
                              "/home/ewan/**/*gcc*"
                              "/home/ewan/**/*g++*"
                              ))
@@ -92,12 +103,6 @@
 
 * MPC
 #+begin_src emacs-lisp
-(map! :map global-map
-      :leader
-      :prefix "o"
-      "p" #'mpc)
-
-
 
 (add-hook 'mpc-mode-hook
  (lambda ()
@@ -118,6 +123,37 @@
    (evil-local-set-key 'normal (kbd "p")          'mpc-playlist)
    (evil-local-set-key 'normal (kbd "P")          'mpc-prev)))
 #+end_src
+
+* EMMS
+** Call functions to initialize EMMS
+#+begin_src emacs-lisp
+(emms-all)
+(emms-default-players)
+#+end_src
+** Configure EMMS
+#+begin_src emacs-lisp
+(setq emms-source-file-default-directory (expand-file-name "~/Music/"))
+
+
+(setq emms-browser-default-covers
+  (list "~/Music/cover_small.jpg" nil nil))
+
+(map! :map global-map
+      "M-n" #'emms-next
+      "M-p" #'emms-previous)
+
+(map! :map global-map
+      :leader
+      :prefix "o"
+      "p" #'emms
+      "P" #'emms-browser
+      "C-p" #'emms-smart-browse)
+
+
+#+end_src
+
+#+RESULTS:
+: emms-smart-browse
 
 * Email
 
@@ -143,6 +179,5 @@
 * To be sorted
 #+begin_src emacs-lisp
 (after! projectile (setq projectile-project-search-path '("~/dev")))
+(setq langtool-language-tool-server-jar "/home/ewan/opt/LanguageTool-6.4-stable/languagetool-server.jar")
 #+end_src
-
-#+RESULTS:
